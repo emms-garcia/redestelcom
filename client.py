@@ -1,16 +1,13 @@
 #!usr/bin/python
 from socket import *
 from sys import argv
-import thread, time
+import Tkinter as tk
+import time
 
-def read_input(s, host):
-	while True:
-		msg = raw_input(">%s: "%host)
-		if msg == "exit":
-			print "Conexion Terminada"
-			s.close()
-		else:
-			s.send(msg)
+def callback(string):
+	print string
+	s.send(string)
+	time.sleep(0.5)
 
 port = int(argv[2])
 host = argv[1]
@@ -21,12 +18,26 @@ s.send(host)
 
 data = s.recv(1024)
 print data
-thread.start_new_thread(read_input, (s, host))
+time.sleep(0.5)
+color = s.recv(1024)
+color = color.replace("<color>", "")
+root = tk.Tk()
+root.title(host)
 
-while True:
-	data = s.recv(1024)
-	if data != None or data != "":
-		print data
+canvas = tk.Canvas(root, width = 200, height = 200, background = color)
+button = tk.Button(canvas, text = 'Up', command = lambda:callback('up'), width = 10)
+button_window = canvas.create_window(100, 10, anchor='n', window=button)
+button = tk.Button(canvas, text = 'Down', command = lambda:callback('down'), width = 10)
+button_window = canvas.create_window(100, 90, anchor='n', window=button)
+button = tk.Button(canvas, text = 'Left', command = lambda:callback('left'), width = 10)
+button_window = canvas.create_window(50, 50, anchor='n', window=button)
+button = tk.Button(canvas, text = 'Right', command = lambda:callback('right'), width = 10)
+button_window = canvas.create_window(150, 50, anchor='n', window=button)
+canvas.pack()
 
-s.close()
+
+root.mainloop()
+
+
+#s.close()
 
