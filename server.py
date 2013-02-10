@@ -1,25 +1,16 @@
 import Tkinter as tk
 import random
-import ImageTk, Image
 from sys import argv
 import socket, thread
+import numpy
 
-
-matrix = [ [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-					[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-					[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-					[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-					[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-					[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-					[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-					[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-					[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-					[1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
-
-class Player(object):
+#Clase encargada de dibujar los rectangulos, guardar sus coordenadas, y moverlos.
+#Parametros
+#-(x, y) Tupla de coordenadas dentro del grid
+#-color Color del rectangulo a generar
+class Rectangle(object):
 	def __init__(self, (x, y), color):
-		global matrix
-		matrix[x][y] = 2
+		grid.matrix[x, y] = 2
 		self.x = x
 		self.y = y
 		self.color = color
@@ -30,118 +21,127 @@ class Player(object):
 				self.canvas = canvas
 				self.rect = canvas.create_rectangle(0 + (n*self.x), 0 + (m*self.y), n + (n*self.x), m + (m*self.y), fill = self.color)
 
-	def move(self, (x, y)):
-		global matrix
-		if is_valid(self.x + x, self.y + y):
-			matrix[self.x][self.y] = 0
-			print 'valid'
+	def move(self, direction):
+		if direction == 'up':
+			x, y = 0, -1
+		elif direction == 'left':
+			x, y = -1, 0
+		elif direction == 'down':
+			x, y = 0, 1
+		elif direction == 'right':
+			x, y = 1, 0
+		if grid.is_valid(self.x + x, self.y + y):
+			grid.matrix[self.x, self.y] = 0
 			self.x += x
 			self.y += y
-			matrix[self.x][self.y] = 2
+			grid.matrix[self.x, self.y] = 2
 			w, h = int(self.canvas.cget('width')), int(self.canvas.cget('height'))
-			n = w/len(matrix)
-			m = h/len(matrix[0])
+			n = w/len(grid.matrix)
+			m = h/len(grid.matrix[0])
 			self.canvas.coords(self.rect,  0 + (n*self.x), 0 + (m*self.y), n + (n*self.x), m + (m*self.y))
-			#draw_matrix(w, h)
 			return True
 		else:
-			print "Not valid"
 			return False
 
 	def update(self, (x, y)):
-		global matrix
-		matrix[self.x][self.y] = 0
+		grid.matrix[self.x, self.y] = 0
 		self.x = x
 		self.y = y
-		matrix[self.x][self.y] = 0
-		n = w/len(matrix)
-		m = h/len(matrix[0])
+		grid.matrix[self.x, self.y] = 0
+		n = w/len(grid.matrix)
+		m = h/len(grid.matrix[0])
 		self.canvas.coords(self.rect,  0 + (n*self.x), 0 + (m*self.y), n + (n*self.x), m + (m*self.y))
 		return
 
+#Clase encargada de crear el grid a partir de una matriz con ceros y unos, dibujarla en el canvas
+#y ademas verificar movimientos validos para los rectangulos
+#Parametros
+#-n largo de la matriz
+#-m ancho de la matriz
+class Grid:
+	def __init__(self, n, m):
+		self.n = n
+		self.m = m
+		self.matrix = self.init_matrix(n, m)
 
-def draw_matrix(w, h):
-	global matrix
-	n = len(matrix)
-	m = len(matrix[0])
-	div_x = w/n
-	div_y = h/m
-	for i in range(n):
-		for j in range(m):
-			if matrix[j][i] == 1:
-				canvas.create_rectangle(0 + (i*div_x), 0 + (j*div_y), div_x + (i*div_x), div_y + (j*div_y), fill = "gray")
-			else:
-				canvas.create_rectangle(0 + (i*div_x), 0 + (j*div_y), div_x + (i*div_x), div_y + (j*div_y), fill = "blue")
-	canvas.update()
-	return div_x, div_y
+	def init_matrix(self, n, m):
+		matrix = numpy.zeros((n,m), dtype = numpy.int8)
+		for i in range(len(matrix)):
+			for j in range(len(matrix[i])):
+				if i == 0 or j == 0 or i == len(matrix)-1 or j == len(matrix[i]) - 1:
+					matrix[i, j] = 1
+		return matrix
 
-def is_valid(x, y):
-	global matrix
-	if matrix[x][y] == 1 or matrix[x][y] == 2:
-		return False
-	else:
-		return True
+	def draw_matrix(self, canvas, w, h):
+		n = len(self.matrix)
+		m = len(self.matrix[0])
+		div_x = w/n
+		div_y = h/m
+		for i in range(n):
+			for j in range(m):
+				if self.matrix[j, i] == 1:
+					canvas.create_rectangle(0 + (i*div_x), 0 + (j*div_y), div_x + (i*div_x), div_y + (j*div_y), fill = "gray")
+				else:
+					canvas.create_rectangle(0 + (i*div_x), 0 + (j*div_y), div_x + (i*div_x), div_y + (j*div_y), fill = "blue")
+		canvas.update()
+		return div_x, div_y
 
-def move(pcolor, direction):
-	if direction == 'up':
-		players[pcolor].move((0, -1))
-	elif direction == 'left':
-		players[pcolor].move((-1, 0))
-	elif direction == 'down':
-		players[pcolor].move((0, 1))
-	elif direction == 'right':
-		players[pcolor].move((1, 0))
+	def is_valid(self, x, y):
+		if self.matrix[x, y] == 1 or self.matrix[x, y] == 2:
+			return False
+		else:
+			return True
 
-			
-def clientthread(conn, addr, host):
-	global act
-	conn.send('Cliente %s conectado al servidor.'%host)
-	clients[conn] = colors[act]
-	conn.send('<color>%s'%colors[act])
-	act += 1
-	while True:
-		data = conn.recv(1024)
-		print data
-		move(clients[conn], data)
+#Clase que se ocupa de manejar las conexiones entre el servidor y los clientes
+#y la recepcion de la informacion de parte de los mismos.
+class Server:
+	def __init__(self):
+		self.clients = {}
+		self.hostnames = {}
+		self.act = 0
+		port = int(argv[1])
+		s = socket.socket()
+		s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		s.bind(('', port))
+		s.listen(3)
+		thread.start_new_thread(self.accept_connections,(s, ))
 		
+	def clientthread(self, conn, host):
+		global colors
+		self.clients[conn] = colors[self.act]
+		conn.send('%s'%colors[self.act])
+		self.act += 1
+		while True:
+			data = conn.recv(1024)
+			players[self.clients[conn]].move(data)
+		
+	def accept_connections(self, s):
+		while True:
+			conn, addr = s.accept()
+			host = conn.recv(1024)
+			thread.start_new_thread(self.clientthread,(conn, host))
 
-def accept_connections(s):
-	while True:
-		conn, addr = s.accept()
-		host = conn.recv(1024)
-		thread.start_new_thread(clientthread,(conn, addr, host))
+def generate_pair(xlimit, ylimit):
+	x, y = 0, 0
+	while not grid.is_valid(x, y):
+		x, y = random.randint(0, xlimit), random.randint(0, ylimit)
+	return x, y
 	
-		
-		
 if __name__ == "__main__":
-	colors = ['red', 'green']
-	act = 0
-	root = tk.Tk()
-	w, h = 600, 600
+	colors = ['red', 'green'] #colores a asignar a los clientes entrantes
+	w, h = 600, 600 #ancho y largo de la ventana
+	grid = Grid(10, 10) #grid de accion del "juego"
+	players = {} #diccionario para guardar los objetos de los jugadores
+	s = Server() #creacion de un servidor para manejar la conexion con sockets
+	root = tk.Tk() #ventana para mostrar el "juego"
+	root.title('Servidor')
 	canvas = tk.Canvas(root, width = w, height = h)
-	n, m = draw_matrix(w, h)
-	players = {}
-	x, y = 0, 0
-	while not is_valid(x, y):
-		x, y = random.randint(0, len(matrix)-1), random.randint(0, len(matrix[0])-1)
-	players['red'] = Player((x, y), "red")
+	n, m = grid.draw_matrix(canvas, w, h)
+	x, y = generate_pair(len(grid.matrix)-1, len(grid.matrix[0])-1)
+	players['red'] = Rectangle((x, y), "red")
 	players['red'].draw(canvas, n, m)
-	x, y = 0, 0
-	while not is_valid(x, y):
-		x, y = random.randint(0, len(matrix)-1), random.randint(0, len(matrix[0])-1)
-	players['green'] = Player((x, y), "green")
+	x, y = generate_pair(len(grid.matrix)-1, len(grid.matrix[0])-1)
+	players['green'] = Rectangle((x, y), "green")
 	players['green'].draw(canvas, n, m)
 	canvas.pack()
-
-	host = ''
-	port = int(argv[1])
-
-	s = socket.socket()
-	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-	s.bind((host, port))
-	s.listen(3)
-
-	clients = {}
-	hostnames = {}
-	thread.start_new_thread(accept_connections,(s, ))
 	root.mainloop()
