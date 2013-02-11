@@ -22,13 +22,17 @@ class Rectangle(object):
 				self.rect = canvas.create_rectangle(0 + (n*self.x), 0 + (m*self.y), n + (n*self.x), m + (m*self.y), fill = self.color)
 
 	def move(self, direction):
-		if direction == 'up':
+		UP = 'A1'.decode('hex')
+		DOWN = 'B1'.decode('hex')
+		LEFT = 'C1'.decode('hex')
+		RIGHT = 'D1'.decode('hex')
+		if direction == UP:
 			x, y = 0, -1
-		elif direction == 'left':
+		elif direction == LEFT:
 			x, y = -1, 0
-		elif direction == 'down':
+		elif direction == DOWN:
 			x, y = 0, 1
-		elif direction == 'right':
+		elif direction == RIGHT:
 			x, y = 1, 0
 		if grid.is_valid(self.x + x, self.y + y):
 			grid.matrix[self.x, self.y] = 0
@@ -97,29 +101,29 @@ class Grid:
 class Server:
 	def __init__(self):
 		self.clients = {}
+		self.UDP_IP = '127.0.0.1'
 		self.hostnames = {}
 		self.act = 0
 		port = int(argv[1])
-		s = socket.socket()
+		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		s.bind(('', port))
-		s.listen(3)
-		thread.start_new_thread(self.accept_connections,(s, ))
+		s.bind((self.UDP_IP, int(argv[1])))
+		thread.start_new_thread(self.listen_connections,(s, ))
 		
-	def clientthread(self, conn, host):
+	def listen_connections(self, conn):
 		global colors
-		self.clients[conn] = colors[self.act]
-		conn.send('%s'%colors[self.act])
-		self.act += 1
+		PACKET_DATA = 'f1a525da11f6'.decode('hex')
 		while True:
-			data = conn.recv(1024)
-			players[self.clients[conn]].move(data)
+			data, addr = conn.recvfrom(1024)
+			if PACKET_DATA == data:
+				print 'Cliente %s, %s conectado.'%(addr)
+				conn.sendto(colors[self.act], addr)
+			else:
+				players[self.clients[addr]].move(data)
+			if addr not in self.clients:
+				self.clients[addr] = colors[self.act]
+				self.act += 1
 		
-	def accept_connections(self, s):
-		while True:
-			conn, addr = s.accept()
-			host = conn.recv(1024)
-			thread.start_new_thread(self.clientthread,(conn, host))
 
 def generate_pair(xlimit, ylimit):
 	x, y = 0, 0
