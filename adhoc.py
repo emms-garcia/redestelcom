@@ -8,7 +8,8 @@ import numpy as np
 
 WIDTH, HEIGHT = 600, 500
 
-NODE_LIFE = 500 #segundos
+NODE_LIFE = 200
+SPOT_ENEMY_RADIUS = 10
 
 def distance(p1, p2):
   x1, y1 = p1
@@ -46,7 +47,6 @@ class Matrix:
     except:
       pass
   
-
   def is_occupied(self, pos):
     #print pos, self.window.shape
     if pos[0] > 0 and pos[0] < WIDTH and pos[1] > 0 and pos[1] < HEIGHT:
@@ -56,7 +56,6 @@ class Matrix:
         return False
     else:
       return False
-  
 
 matrix = Matrix()
 
@@ -77,7 +76,7 @@ class Node:
     #surface.blit(self.img, self.pos)
 
   def move(self, p, q):
-    if self.x + p > 0 and self.x + p < WIDTH and self.y + q > 0 and self.y + q < HEIGHT:
+    if self.x + p > 0 and self.x + p < WIDTH - WIDTH/100 and self.y + q > 0 and self.y + q < HEIGHT- HEIGHT/100:
       new_pos = self.x + p, self.y + q
       if not matrix.is_occupied(new_pos):
         self.life -= random.randint(0, 1)
@@ -103,9 +102,9 @@ class Connection:
 
   def draw_conn(self, surface):
     for node in self.nodes:
-      #color = (255, 255, 255)
+      color = (255, 255, 255)
       node.draw(surface, color = self.color)
-      #pygame.draw.line(surface, color, self.node.pos, node.pos, 1)
+      #pygame.draw.line(surface, color, self.nodes[0].pos, node.pos, 1)
 
   def add_node(self, node):
     if len(self.nodes) >= 3:
@@ -214,10 +213,6 @@ class Network:
     for conn in self.connections:
       conn.move_nodes(mission)
       
-    
-        
-   
-
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 background = pygame.Surface(screen.get_size())
@@ -228,43 +223,31 @@ background.fill((0, 0, 0))
 adhoc = Network(50)
 
 INICIO = time.time()
-mission = random.randint(0, WIDTH - 1), random.randint(0, HEIGHT - 1)
+mission = random.randint(WIDTH/10, WIDTH - WIDTH/10), random.randint(HEIGHT/10, HEIGHT - HEIGHT/10)
 clock = pygame.time.Clock()
+enemigo = None
 while True:  
   screen.blit(background, (0, 0))
-  adhoc.move_network(mission)
-  adhoc.draw_network(screen)
-  pygame.draw.circle(screen, (0, 0, 255), mission, 5, 1) 
+  for event in pygame.event.get():
+    if event.type == pygame.MOUSEBUTTONDOWN:
+      pos = pygame.mouse.get_pos()
+      #print 'asd at : ',pos
+      enemigo = pos
+  pygame.draw.circle(screen, (0, 0, 255), mission, 5, 1)#dibujar la mision
+  adhoc.move_network(mission) #mover la red al objetivo
+  adhoc.draw_network(screen) #dibujar los cambios
+
+  if enemigo:
+    pygame.draw.circle(screen, (255, 0, 0), enemigo, 10, 1) 
+
   pygame.display.update()
-  clock.tick(1)
+  clock.tick(3)
   FIN = time.time()
   t = FIN - INICIO
-  if t > 5:
+  if t > 5: #cambiar la mision cada 5 segundos
     prev_mission = mission
     INICIO = time.time()
-    while distance(prev_mission, mission) < 300:
-      mission = random.randint(0, WIDTH - 1), random.randint(0, HEIGHT - 1)
+    while distance(prev_mission, mission) < 300: #cambiarla lejos del ultimo lugar
+      mission = random.randint(WIDTH/10, WIDTH - WIDTH/10), random.randint(HEIGHT/10, HEIGHT - HEIGHT/10)
   #time.sleep(0.5)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
